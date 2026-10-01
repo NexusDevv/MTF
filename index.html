@@ -545,6 +545,29 @@ body::before{ z-index:1 !important; }
 .roster tr.me td:first-child{ box-shadow:inset 3px 0 0 var(--tan); }
 @media (max-width:640px){ .discord-btn .d-txt{ display:none; } .discord-btn{ padding:0 14px; min-height:52px; } }
 
+/* Admin roster editor */
+.admin-bar{ --c:14px; --bd:rgba(var(--tan-rgb),.6); --fill:linear-gradient(90deg,rgba(var(--tan-rgb),.16),rgba(14,16,10,.95)); display:flex; flex-wrap:wrap; gap:14px; align-items:center; justify-content:space-between; padding:14px 18px; margin-bottom:14px; }
+.admin-bar b{ display:block; color:var(--tan); font:400 14px "Share Tech Mono",monospace; letter-spacing:.16em; text-transform:uppercase; margin-bottom:3px; }
+.admin-bar span{ color:#d0c8b4; font-size:14px; }
+.admin-bar .btn{ min-height:48px; font-size:15px; }
+.roster .act{ display:none; }
+.roster.admin .act{ display:table-cell; }
+.row-edit{ display:inline-flex; align-items:center; gap:6px; padding:7px 12px; border:1px solid var(--ln2); background:#11130d; color:var(--tan); cursor:pointer; font:400 13px "Share Tech Mono",monospace; }
+.row-edit:hover{ border-color:var(--tan); color:#fff; }
+.row-edit[disabled]{ opacity:.4; cursor:not-allowed; }
+.mform{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.mform label{ display:grid; gap:6px; }
+.mform .wide{ grid-column:1/-1; }
+.mform span{ color:var(--olive); font:400 12px "Share Tech Mono",monospace; letter-spacing:.14em; text-transform:uppercase; }
+.mform input, .mform select{ min-height:44px; padding:0 12px; border:1px solid var(--ln2); background:#0c0e09; color:var(--txt); font:500 15px Inter,Cairo,sans-serif; }
+.mform input:focus, .mform select:focus{ outline:2px solid var(--tan); outline-offset:0; }
+.m-error{ min-height:20px; margin:12px 0 4px; color:#ef7b66; font-size:14px; }
+.m-actions{ display:flex; gap:12px; justify-content:space-between; flex-wrap:wrap; }
+.m-actions .btn{ flex:1; min-width:180px; min-height:52px; font-size:15px; }
+.btn.danger{ --bd:rgba(229,96,78,.6); --fill:#1a0f0c; color:#f3b3a6; }
+.admin-chip{ display:inline-flex; gap:8px; align-items:center; margin:0 0 12px; padding:6px 12px; border:1px solid rgba(var(--tan-rgb),.5); color:var(--tan); font:400 13px "Share Tech Mono",monospace; letter-spacing:.12em; text-transform:uppercase; }
+@media (max-width:560px){ .mform{ grid-template-columns:1fr; } }
+
 </style>
 </head>
 <body>
@@ -738,10 +761,11 @@ body::before{ z-index:1 !important; }
       <div class="sec-head" style="margin:0"><p class="kicker" data-i18n="tabSchedule">MTF Schedule</p><h2 data-i18n="schedTitle">MTF Personnel Schedule</h2><p data-i18n="schedSub"></p></div>
       <span class="badge cut"><i class="fa-solid fa-users"></i><span id="rosterTotal">1</span></span>
     </div>
+    <div class="admin-bar cut hidden" id="adminBar"></div>
     <div class="rfilter" id="rankFilter"></div>
     <div class="table-wrap cut">
       <table class="roster">
-        <thead><tr><th data-i18n="colBn">Badge</th><th data-i18n="colName">Name</th><th data-i18n="colIns">Insignia</th><th data-i18n="colDept">Section</th><th data-i18n="colRank">Rank</th><th data-i18n="colResp">Responsibility</th><th data-i18n="colStatus">Status</th><th data-i18n="colVac">Vacations</th><th data-i18n="colPoints">Points</th><th data-i18n="colStrikes">Strikes</th></tr></thead>
+        <thead><tr><th data-i18n="colBn">Badge</th><th data-i18n="colName">Name</th><th data-i18n="colIns">Insignia</th><th data-i18n="colDept">Section</th><th data-i18n="colRank">Rank</th><th data-i18n="colResp">Responsibility</th><th data-i18n="colStatus">Status</th><th data-i18n="colVac">Vacations</th><th data-i18n="colPoints">Points</th><th data-i18n="colStrikes">Strikes</th><th class="act" data-i18n="actions">Edit</th></tr></thead>
         <tbody id="rosterBody"></tbody>
       </table>
     </div>
@@ -832,6 +856,30 @@ body::before{ z-index:1 !important; }
   <section class="modal-box cut" role="dialog" aria-modal="true" aria-labelledby="dTitle">
     <header class="modal-head"><div><h2 id="dTitle" data-i18n="dTitle">Discord Account</h2><p data-i18n="dSub">Link your Discord to see your MTF profile.</p></div><button class="x" type="button" onclick="closeModal('discordModal')" aria-label="Close"><i class="fa-solid fa-xmark"></i></button></header>
     <div id="discordBody"></div>
+  </section>
+</div>
+
+<!-- Member editor -->
+<div id="memberModal" class="modal hidden" onclick="if(event.target===this)closeModal('memberModal')">
+  <section class="modal-box cut" role="dialog" aria-modal="true" aria-labelledby="memberTitle">
+    <header class="modal-head"><div><h2 id="memberTitle">Edit member</h2><p data-i18n="mSub">Changes are saved to the MTF roster database.</p></div><button class="x" type="button" onclick="closeModal('memberModal')" aria-label="Close"><i class="fa-solid fa-xmark"></i></button></header>
+    <div class="mform">
+      <label><span data-i18n="colName">Name</span><input id="mName" maxlength="60" autocomplete="off"></label>
+      <label><span data-i18n="colBn">Badge</span><input id="mBadge" maxlength="12" autocomplete="off" placeholder="F-12"></label>
+      <label><span data-i18n="colRank">Rank</span><select id="mRank"></select></label>
+      <label><span data-i18n="colStatus">Status</span><select id="mStatus"></select></label>
+      <label class="wide"><span data-i18n="colResp">Responsibility</span><input id="mResp" maxlength="80" autocomplete="off"></label>
+      <label><span data-i18n="fDiscord">Discord ID</span><input id="mDiscord" inputmode="numeric" maxlength="22" autocomplete="off" placeholder="1091698576373055538"></label>
+      <label><span data-i18n="colDept">Section</span><input id="mSection" maxlength="20" autocomplete="off"></label>
+      <label><span data-i18n="colPoints">Points</span><input id="mPoints" maxlength="12" autocomplete="off"></label>
+      <label><span data-i18n="colStrikes">Strikes</span><input id="mStrikes" maxlength="12" autocomplete="off"></label>
+      <label class="wide"><span data-i18n="colVac">Vacations</span><input id="mVac" maxlength="60" autocomplete="off"></label>
+    </div>
+    <p class="m-error" id="mError" role="alert"></p>
+    <div class="m-actions">
+      <button class="btn cut danger" id="mDelete" type="button" onclick="deleteMember()"><i class="fa-solid fa-user-minus"></i><span data-i18n="del">Remove member</span></button>
+      <button class="btn primary cut" id="mSave" type="button" onclick="saveMember()"><i class="fa-solid fa-floppy-disk"></i><span>Save</span></button>
+    </div>
   </section>
 </div>
 
@@ -1131,6 +1179,11 @@ const copy = {
     dSetup:'Discord linking is not set up yet', dSetupText:'The site owner needs to add the Supabase URL and anon key at the top of the script.',
     dOut:'Link your Discord account to see your rank, badge, status, and strikes from the MTF roster.', dBtn:'Link with Discord', dUnlink:'Unlink Discord',
     dNotMember:'Your Discord is not on the MTF roster yet.', dApply:'Apply for Recruitment', dId:'Discord ID', dWelcome:'Welcome back,', dYou:'You', dBusy:'Connecting to Discord...', dErr:'Could not reach Discord. Try again.',
+
+    adminOn:'Admin mode', adminText:'You can add, edit, and remove roster members. Changes go live for everyone.', addMember:'Add member', edit:'Edit',
+    editTitle:'Edit member', addTitle:'Add member', mSub:'Changes are saved to the MTF roster database.', fDiscord:'Discord ID', save:'Save', saving:'Saving...', del:'Remove member',
+    confirmDel:'Remove {name} from the roster?', errPerm:'You do not have permission to edit the roster.', errReq:'Name and rank are required.', errSave:'Could not save: {msg}',
+    dbMissing:'Roster database is not set up yet, so changes cannot be saved. Run the setup SQL in Supabase.', adminChip:'Roster admin', actions:'Edit',
     pageTitle:'FT | MTF Command Portal', brandKicker:'MTF // Mobile Task Force', brandTitle:'MTF <span>Command Portal</span>',
     splashKicker:'Secure command link', splashTitle:'Mobile Task Force', splashSub:'Initializing tactical systems',
     tabHub:'HUB', tabRegs:'Regulations', tabSop:'MTF SOP', tabFto:'FTO', tabSchedule:'MTF Schedule', tabCrew:'MTF Crew', tabCredits:'Credits',
@@ -1183,6 +1236,11 @@ const copy = {
     dSetup:'ربط ديسكورد غير مُفعّل بعد', dSetupText:'يجب على مالك الموقع إضافة رابط Supabase والمفتاح العام في أعلى السكربت.',
     dOut:'اربط حساب ديسكورد لعرض رتبتك ورقمك وحالتك ومخالفاتك من جدول القوة.', dBtn:'الربط عبر ديسكورد', dUnlink:'إلغاء ربط ديسكورد',
     dNotMember:'حسابك في ديسكورد غير موجود في جدول القوة بعد.', dApply:'التقديم على التوظيف', dId:'معرّف ديسكورد', dWelcome:'مرحباً بعودتك،', dYou:'أنت', dBusy:'جارٍ الاتصال بديسكورد...', dErr:'تعذر الاتصال بديسكورد. حاول مرة أخرى.',
+
+    adminOn:'وضع المشرف', adminText:'يمكنك إضافة أفراد الجدول وتعديلهم وحذفهم، وتظهر التغييرات للجميع مباشرة.', addMember:'إضافة فرد', edit:'تعديل',
+    editTitle:'تعديل فرد', addTitle:'إضافة فرد', mSub:'تُحفظ التغييرات في قاعدة بيانات جدول القوة.', fDiscord:'معرّف ديسكورد', save:'حفظ', saving:'جارٍ الحفظ...', del:'حذف الفرد',
+    confirmDel:'هل تريد حذف {name} من الجدول؟', errPerm:'لا تملك صلاحية تعديل الجدول.', errReq:'الاسم والرتبة مطلوبان.', errSave:'تعذر الحفظ: {msg}',
+    dbMissing:'قاعدة بيانات الجدول غير مُعدّة بعد، لذلك لا يمكن حفظ التغييرات. شغّل كود الإعداد في Supabase.', adminChip:'مشرف الجدول', actions:'تعديل',
     pageTitle:'FT | بوابة قيادة MTF', brandKicker:'MTF // قوة المهام المتنقلة', brandTitle:'MTF <span>بوابة القيادة</span>',
     splashKicker:'رابط قيادة آمن', splashTitle:'قوة المهام المتنقلة', splashSub:'جارٍ تشغيل الأنظمة التكتيكية',
     tabHub:'الرئيسية', tabRegs:'اللوائح', tabSop:'دليل MTF', tabFto:'التدريب', tabSchedule:'جدول MTF', tabCrew:'طاقم MTF', tabCredits:'الحقوق',
@@ -1365,6 +1423,10 @@ function setRankFilter(g) { rankFilter = g; renderSchedule(); }
 function renderSchedule() {
   const body = document.getElementById('rosterBody'); if (!body) return;
   const ar = currentLanguage === 'ar';
+  document.querySelector('table.roster').classList.toggle('admin', isAdmin);
+  const bar = document.getElementById('adminBar');
+  bar.classList.toggle('hidden', !isAdmin);
+  if (isAdmin) bar.innerHTML = '<div><b><i class="fa-solid fa-user-gear"></i> ' + t('adminOn') + '</b><span>' + (rosterLive ? t('adminText') : t('dbMissing')) + '</span></div>' + (rosterLive ? '<button class="btn primary cut" type="button" onclick="addMember()"><i class="fa-solid fa-user-plus"></i><span>' + t('addMember') + '</span></button>' : '');
   document.getElementById('rosterTotal').textContent = ROSTER.length;
   document.getElementById('presenceCount').textContent = ROSTER.filter(r => r.status.toLowerCase() === 'active').length;
   const groups = []; RANKS.forEach(r => { let g = groups.find(x => x.en === r.group); if (!g) groups.push(g = { en:r.group, ar:r.groupAr, items:[] }); g.items.push(r); });
@@ -1373,14 +1435,14 @@ function renderSchedule() {
   const cell = v => (!v || v === 'N/A') ? '<span class="na">N/A</span>' : escapeHtml(v);
   let html = '';
   groups.filter(g => rankFilter === 'all' || g.en === rankFilter).forEach(g => {
-    const people = ROSTER.filter(p => { const k = rankByName(p.rank); return k && k.group === g.en; }).sort((a, b) => RANKS.indexOf(rankByName(a.rank)) - RANKS.indexOf(rankByName(b.rank)));
+    const people = ROSTER.filter(p => { const k = rankByName(p.rank); return k && k.group === g.en; }).sort(byRosterOrder);
     if (!people.length) return;
-    html += '<tr class="grp"><td colspan="10">' + escapeHtml(ar ? g.ar : g.en) + '</td></tr>';
-    html += people.map(p => { const k = rankByName(p.rank); const st = p.status.toUpperCase(); return '<tr' + (myMember() === p ? ' class="me"' : '') + '><td class="bn">' + escapeHtml(p.badge) + '</td><td class="nm">' + escapeHtml(p.name) + '</td><td><span class="ins">' + insignia(k.ins) + '</span></td><td>' + escapeHtml(p.section) + '</td><td>' + escapeHtml(ar ? k.ar : k.en) + '</td><td class="resp">' + cell(p.resp) + '</td><td><span class="status ' + st + '">' + escapeHtml(st) + '</span></td><td>' + cell(p.vac) + '</td><td>' + cell(p.points) + '</td><td>' + cell(p.strikes) + '</td></tr>'; }).join('');
+    html += '<tr class="grp"><td colspan="11">' + escapeHtml(ar ? g.ar : g.en) + '</td></tr>';
+    html += people.map(p => { const k = rankByName(p.rank); const st = p.status.toUpperCase(); return '<tr' + (myMember() === p ? ' class="me"' : '') + '><td class="bn">' + escapeHtml(p.badge) + '</td><td class="nm">' + escapeHtml(p.name) + '</td><td><span class="ins">' + insignia(k.ins) + '</span></td><td>' + escapeHtml(p.section) + '</td><td>' + escapeHtml(ar ? k.ar : k.en) + '</td><td class="resp">' + cell(p.resp) + '</td><td><span class="status ' + st + '">' + escapeHtml(st) + '</span></td><td>' + cell(p.vac) + '</td><td>' + cell(p.points) + '</td><td>' + cell(p.strikes) + '</td>' + (isAdmin ? '<td class="act"><button class="row-edit" type="button" onclick="editMember(\'' + escapeHtml(p.id || '') + '\')"' + (p.id ? '' : ' disabled') + '><i class="fa-solid fa-pen"></i><span>' + t('edit') + '</span></button></td>' : '') + '</tr>'; }).join('');
   });
   const orphans = ROSTER.filter(p => !rankByName(p.rank));
   if (rankFilter === 'all' && orphans.length) html += orphans.map(p => '<tr><td class="bn">' + escapeHtml(p.badge) + '</td><td class="nm">' + escapeHtml(p.name) + '</td><td></td><td>' + escapeHtml(p.section) + '</td><td>' + escapeHtml(p.rank) + '</td><td class="resp">' + cell(p.resp) + '</td><td><span class="status ' + p.status.toUpperCase() + '">' + escapeHtml(p.status.toUpperCase()) + '</span></td><td>' + cell(p.vac) + '</td><td>' + cell(p.points) + '</td><td>' + cell(p.strikes) + '</td></tr>').join('');
-  body.innerHTML = html || '<tr class="empty-row"><td colspan="10">' + t('rosterEmpty') + '</td></tr>';
+  body.innerHTML = html || '<tr class="empty-row"><td colspan="11">' + t('rosterEmpty') + '</td></tr>';
   document.getElementById('rankGroups').innerHTML = groups.map(g => '<div class="rgroup"><h3>' + escapeHtml(ar ? g.ar : g.en) + '</h3><div class="rlist">' + g.items.map(r => '<article class="rcard cut"><span class="ins">' + insignia(r.ins) + '</span><div><b>' + escapeHtml(r.en) + '</b><span class="ar">' + escapeHtml(r.ar) + '</span><p' + (ar ? ' dir="rtl"' : '') + '>' + escapeHtml(ar ? r.descAr : r.descEn) + '</p></div></article>').join('') + '</div></div>').join('');
 }
 function renderCrew() {
@@ -1402,7 +1464,8 @@ function initAuth() {
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY || !window.supabase) { renderAuth(); return; }
   try {
     sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: true, detectSessionInUrl: true, flowType: 'pkce' } });
-    sb.auth.onAuthStateChange((_e, session) => { currentUser = session ? session.user : null; authBusy = false; cleanAuthUrl(); renderAuth(); renderSchedule(); });
+    sb.auth.onAuthStateChange((_e, session) => { currentUser = session ? session.user : null; authBusy = false; cleanAuthUrl(); renderAuth(); renderSchedule(); setTimeout(checkAdmin, 0); });
+    loadRoster(); subscribeRoster();
     sb.auth.getSession().then(({ data }) => { currentUser = data.session ? data.session.user : null; cleanAuthUrl(); renderAuth(); renderSchedule(); });
   } catch (e) { sb = null; renderAuth(); }
 }
@@ -1415,7 +1478,7 @@ async function linkDiscord() {
   const { error } = await sb.auth.signInWithOAuth({ provider: 'discord', options: { redirectTo: location.origin + location.pathname, scopes: 'identify' } });
   if (error) { authBusy = false; renderAuth(true); }
 }
-async function unlinkDiscord() { if (sb) await sb.auth.signOut(); currentUser = null; renderAuth(); renderSchedule(); }
+async function unlinkDiscord() { if (sb) await sb.auth.signOut(); currentUser = null; isAdmin = false; renderAuth(); renderSchedule(); }
 function openDiscord() { renderAuth(); openModal('discordModal'); }
 function avatarHtml(d, cls) { return d.avatar ? '<img class="' + cls + '" src="' + escapeHtml(d.avatar) + '" alt="" referrerpolicy="no-referrer">' : '<span class="' + cls + ' ph"><i class="fa-brands fa-discord"></i></span>'; }
 function renderAuth(failed) {
@@ -1432,7 +1495,7 @@ function renderAuth(failed) {
     let html = '<div class="d-who">' + avatarHtml(d, 'd-big') + '<div><b>' + escapeHtml(d.name) + '</b><span>' + t('dId') + ': ' + escapeHtml(d.id) + '</span></div></div>';
     if (me) {
       const k = rankByName(me.rank), st = me.status.toUpperCase(), cell = v => (!v || v === 'N/A') ? 'N/A' : escapeHtml(v);
-      html += '<div class="d-card cut"><span class="ins">' + insignia(k ? k.ins : null) + '</span><div><p class="d-rank">' + escapeHtml(k ? (ar ? k.ar : k.en) : me.rank) + '</p><h3>' + escapeHtml(me.name) + '</h3><dl>' +
+      html += (isAdmin ? '<p class="admin-chip"><i class="fa-solid fa-user-gear"></i> ' + t('adminChip') + '</p>' : '') + '<div class="d-card cut"><span class="ins">' + insignia(k ? k.ins : null) + '</span><div><p class="d-rank">' + escapeHtml(k ? (ar ? k.ar : k.en) : me.rank) + '</p><h3>' + escapeHtml(me.name) + '</h3><dl>' +
         '<div><dt>' + t('colBn') + '</dt><dd>' + escapeHtml(me.badge) + '</dd></div>' +
         '<div><dt>' + t('colResp') + '</dt><dd>' + cell(me.resp) + '</dd></div>' +
         '<div><dt>' + t('colStatus') + '</dt><dd><span class="status ' + st + '">' + st + '</span></dd></div>' +
@@ -1450,6 +1513,76 @@ function renderAuth(failed) {
     wel.innerHTML = avatarHtml(d, 'd-av') + '<span>' + t('dWelcome') + ' <b>' + escapeHtml(me.name) + '</b> · ' + escapeHtml(k ? (ar ? k.ar : k.en) : me.rank) + ' · ' + escapeHtml(me.badge) + '</span>';
     wel.classList.remove('hidden');
   } else wel.classList.add('hidden');
+}
+
+
+/* ---------- Roster database + admin editor ---------- */
+let isAdmin = false, rosterLive = false, editingId = null;
+const STATUSES = ['Active', 'Unactive', 'Vacation'];
+function byRosterOrder(a, b) {
+  const ra = RANKS.indexOf(rankByName(a.rank)), rb = RANKS.indexOf(rankByName(b.rank));
+  if (ra !== rb) return ra - rb;
+  if ((a.sort || 0) !== (b.sort || 0)) return (a.sort || 0) - (b.sort || 0);
+  return String(a.badge).localeCompare(String(b.badge), undefined, { numeric: true });
+}
+async function loadRoster() {
+  if (!sb) return;
+  try {
+    const { data, error } = await sb.from('roster').select('*').order('sort', { ascending: true });
+    if (error) { rosterLive = false; console.warn('Roster DB:', error.message); }
+    else { rosterLive = true; ROSTER.length = 0; (data || []).forEach(r => ROSTER.push(r)); }
+  } catch (e) { rosterLive = false; }
+  renderSchedule(); renderAuth();
+}
+function subscribeRoster() {
+  if (!sb || !sb.channel) return;
+  try { sb.channel('roster-live').on('postgres_changes', { event: '*', schema: 'public', table: 'roster' }, () => loadRoster()).subscribe(); } catch (e) {}
+}
+async function checkAdmin() {
+  let ok = false;
+  if (sb && currentUser) { try { const { data, error } = await sb.rpc('is_mtf_admin'); ok = !error && data === true; } catch (e) {} }
+  if (ok !== isAdmin) { isAdmin = ok; renderSchedule(); renderAuth(); }
+}
+function fillRankSelect(sel, value) {
+  sel.innerHTML = RANKS.map(r => '<option value="' + escapeHtml(r.en) + '"' + (r.en === value ? ' selected' : '') + '>' + escapeHtml(currentLanguage === 'ar' ? r.ar + ' · ' + r.en : r.en) + '</option>').join('');
+}
+function memberForm(p) {
+  editingId = p.id || null;
+  document.getElementById('memberTitle').textContent = t(editingId ? 'editTitle' : 'addTitle');
+  const v = (id, val) => { document.getElementById(id).value = val == null ? '' : val; };
+  v('mBadge', p.badge); v('mName', p.name); v('mDiscord', p.discord); v('mSection', p.section || 'MTF');
+  fillRankSelect(document.getElementById('mRank'), p.rank || RANKS[RANKS.length - 1].en);
+  document.getElementById('mStatus').innerHTML = STATUSES.map(s => '<option' + (s === (p.status || 'Active') ? ' selected' : '') + '>' + s + '</option>').join('');
+  v('mResp', p.resp || 'N/A'); v('mVac', p.vac || 'N/A'); v('mPoints', p.points || 'N/A'); v('mStrikes', p.strikes || 'N/A');
+  document.getElementById('mDelete').classList.toggle('hidden', !editingId);
+  document.getElementById('mError').textContent = '';
+  const sv = document.getElementById('mSave'); sv.disabled = false; sv.querySelector('span').textContent = t('save');
+  openModal('memberModal');
+  document.getElementById('mName').focus();
+}
+function addMember() { if (isAdmin && rosterLive) memberForm({}); }
+function editMember(id) { const p = ROSTER.find(r => r.id === id); if (isAdmin && p) memberForm(p); }
+function memberError(error) {
+  const msg = error && error.message || '';
+  document.getElementById('mError').textContent = /permission|policy|42501/i.test(msg + (error && error.code || '')) ? t('errPerm') : t('errSave', { msg });
+}
+async function saveMember() {
+  const g = id => document.getElementById(id).value.trim();
+  const row = { badge: g('mBadge'), name: g('mName'), discord: g('mDiscord').replace(/\D/g, ''), section: g('mSection') || 'MTF', rank: g('mRank'), resp: g('mResp') || 'N/A', status: g('mStatus'), vac: g('mVac') || 'N/A', points: g('mPoints') || 'N/A', strikes: g('mStrikes') || 'N/A' };
+  if (!row.name || !row.rank) { document.getElementById('mError').textContent = t('errReq'); return; }
+  const sv = document.getElementById('mSave'); sv.disabled = true; sv.querySelector('span').textContent = t('saving');
+  let res;
+  if (editingId) res = await sb.from('roster').update(row).eq('id', editingId).select();
+  else { row.sort = ROSTER.reduce((m, r) => Math.max(m, r.sort || 0), 0) + 10; res = await sb.from('roster').insert(row).select(); }
+  if (res.error || !res.data || !res.data.length) { sv.disabled = false; sv.querySelector('span').textContent = t('save'); memberError(res.error || { code: '42501' }); return; }
+  closeModal('memberModal'); await loadRoster();
+}
+async function deleteMember() {
+  const p = ROSTER.find(r => r.id === editingId); if (!p) return;
+  if (!confirm(t('confirmDel', { name: p.name }))) return;
+  const res = await sb.from('roster').delete().eq('id', editingId).select();
+  if (res.error || !res.data || !res.data.length) { memberError(res.error || { code: '42501' }); return; }
+  closeModal('memberModal'); await loadRoster();
 }
 
 /* ---------- Workspaces ---------- */
