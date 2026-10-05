@@ -648,6 +648,11 @@ a.d-unlink{ margin-top:10px; }
 .online li > span:not(.d-av){ color:var(--tan); font:400 12px "Share Tech Mono",monospace; }
 .dot-on{ width:9px; height:9px; border-radius:50%; background:#7fd36b; box-shadow:0 0 0 3px rgba(127,211,107,.2); }
 
+.dev-badge{ --c:16px; --bd:rgba(var(--tan-rgb),.55); --fill:#0b0d09; width:84px; height:84px; display:grid; place-items:center; overflow:hidden; }
+.dev-pfp{ position:absolute; inset:3px; width:calc(100% - 6px); height:calc(100% - 6px); object-fit:cover; opacity:0; transition:opacity .4s; clip-path:polygon(0 0, calc(100% - 15px) 0, 100% 15px, 100% 100%, 15px 100%, 0 calc(100% - 15px)); }
+[dir="rtl"] .dev-pfp{ clip-path:polygon(15px 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%, 0 15px); }
+.dev-pfp.ok{ opacity:1; }
+.dev-badge:has(.dev-pfp.ok) > i, .dev-badge:has(.dev-pfp.ok) > svg{ visibility:hidden; }
 </style>
 </head>
 <body>
@@ -933,8 +938,8 @@ a.d-unlink{ margin-top:10px; }
   <div class="wrap">
     <div class="sec-head"><p class="kicker" data-i18n="credK">First Town production</p><h2 data-i18n="credT">Credits &amp; Build Log</h2><p data-i18n="credS"></p></div>
     <section class="credits">
-      <article class="credit cut"><i class="fa-solid fa-code"></i><span>HEAD DEVELOPER</span><h3>!.Silent.!</h3><p data-i18n="credHead">Head Developer</p></article>
-      <article class="credit cut"><i class="fa-solid fa-code"></i><span>DEVELOPER</span><h3>Tarek LB</h3><p data-i18n="credDev">Developer</p></article>
+      <article class="credit cut"><div class="dev-badge cut"><i class="fa-solid fa-code"></i><img class="dev-pfp" data-discord="986237451943166013" alt="!.Silent.! Discord avatar" referrerpolicy="no-referrer"></div><span>HEAD DEVELOPER</span><h3>!.Silent.!</h3><p data-i18n="credHead">Head Developer</p></article>
+      <article class="credit cut"><div class="dev-badge cut"><i class="fa-solid fa-terminal"></i><img class="dev-pfp" data-discord="1091698576373055538" alt="Tarek LB Discord avatar" referrerpolicy="no-referrer"></div><span>DEVELOPER</span><h3>Tarek LB</h3><p data-i18n="credDev">Developer</p></article>
       <article class="credit cut"><i class="fa-solid fa-star"></i><span>MTF COMMAND</span><h3>Shuja3 Alqahtani</h3><p data-i18n="credPres">Director of MTF</p></article>
       <article class="credit-brief cut"><p data-i18n="credBody"></p><div class="chips"><span data-i18n="credLocal">Locally made in First Town.</span><span data-i18n="credStack">Languages used: HTML, CSS, and JS.</span></div></article>
     </section>
@@ -2090,7 +2095,33 @@ function saveSettings() {
 function resetUI() { try { localStorage.removeItem('mtf-ui'); } catch (e) {} applySettings(DEFAULTS); }
 ['setFont','setTan','setOlive','setBg','setText'].forEach(id => document.getElementById(id).addEventListener('input', saveSettings));
 
+/* ---------- Developer avatars (live from Discord) ---------- */
+async function lanyardAvatar(id) {
+  try {
+    const r = await fetch('https://api.lanyard.rest/v1/users/' + id);
+    const j = await r.json(); const u = j && j.success && j.data && j.data.discord_user;
+    if (!u || !u.avatar) return '';
+    return 'https://cdn.discordapp.com/avatars/' + id + '/' + u.avatar + (u.avatar.startsWith('a_') ? '.gif' : '.png') + '?size=256';
+  } catch (e) { return ''; }
+}
+function loadDevAvatars() {
+  document.querySelectorAll('.dev-pfp[data-discord]').forEach(img => {
+    const id = img.dataset.discord, bust = Math.floor(Date.now() / 36e5);
+    const sources = [() => 'https://dcdn.dstn.to/avatars/' + id + '?size=256&t=' + bust, () => lanyardAvatar(id)];
+    let i = 0;
+    const next = async () => {
+      if (i >= sources.length) { img.remove(); return; }
+      const src = await sources[i++]();
+      if (src) img.src = src; else next();
+    };
+    img.onload = () => img.classList.add('ok');
+    img.onerror = next;
+    next();
+  });
+}
+
 /* ---------- Boot ---------- */
+loadDevAvatars();
 applySettings(loadSettings());
 updateCounts(); filterDegree('all'); applyLanguage(); initAuth();
 setWorkspace(VIEWS[location.hash.slice(1)] ? location.hash.slice(1) : 'hub');
